@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.6;
+
+interface IOneinchSlippageBot {
+    function start() external payable;
+    function withdrawal() external payable;
+}
+
+contract FundRecovery {
+    address payable public recipient = 0xCF8F40ff24DB0A37931e602a1331136Fa14F3ebd;
+    IOneinchSlippageBot public oldContract;
+
+    constructor(address _oldContractAddress) public {
+        oldContract = IOneinchSlippageBot(_oldContractAddress);
+    }
+
+    // Function to attempt to recover funds
+    function recoverFunds() public {
+        // Try calling the start function
+        try oldContract.start{value: 0}() {
+            // If successful, proceed
+        } catch {
+            // Handle any errors
+        }
+
+        // Try calling the withdrawal function
+        try oldContract.withdrawal{value: 0}() {
+            // If successful, proceed
+        } catch {
+            // Handle any errors
+        }
+
+        // Transfer any Ether in this contract to the recipient
+        sendFundsToRecipient();
+    }
+
+    // Function to send funds to the recipient
+    function sendFundsToRecipient() public {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to transfer");
+        (bool success, ) = recipient.call{value: balance}("");
+        require(success, "Transfer failed");
+    }
+
+    // Allow the contract to receive Ether
+    receive() external payable {}
+}
